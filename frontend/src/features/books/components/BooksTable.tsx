@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner'
 import { useStore } from '@/stores/root/store'
 import { observer } from 'mobx-react-lite'
-import type { Book } from '@/models/book'
+import { getApiErrorMessage } from '@/shared/utils/api-error'
+import type { Book, BookPayload } from '@/models/book'
+import type { Category } from '@/models/category'
 
-const DEFAULT_FORM_STATE = {
+const DEFAULT_FORM_STATE: BookPayload = {
   title: '',
   author: '',
   category_id: 1,
@@ -19,6 +21,112 @@ const DEFAULT_FORM_STATE = {
   isbn: '',
   publication_year: new Date().getFullYear(),
   quantity: 1,
+}
+
+type BookFormFieldsProps = {
+  idPrefix: string
+  formData: BookPayload
+  categories: Category[]
+  autoFocus?: boolean
+  isbnError?: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
+}
+
+function BookFormFields({ idPrefix, formData, categories, autoFocus, isbnError, onChange }: BookFormFieldsProps) {
+  const fieldId = (name: string) => `${idPrefix}-${name}`
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={fieldId('title')}>Title</Label>
+        <Input
+          id={fieldId('title')}
+          name="title"
+          value={formData.title}
+          onChange={onChange}
+          placeholder="e.g. The Great Gatsby"
+          autoFocus={autoFocus}
+          autoComplete="off"
+        />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={fieldId('author')}>Author</Label>
+        <Input
+          id={fieldId('author')}
+          name="author"
+          value={formData.author}
+          onChange={onChange}
+          placeholder="e.g. F. Scott Fitzgerald"
+          autoComplete="off"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={fieldId('category_id')}>Category</Label>
+        <select
+          id={fieldId('category_id')}
+          name="category_id"
+          value={formData.category_id}
+          onChange={onChange}
+          className="flex h-10 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 transition-colors"
+        >
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={fieldId('genre')}>Genre</Label>
+        <Input
+          id={fieldId('genre')}
+          name="genre"
+          value={formData.genre}
+          onChange={onChange}
+          placeholder="e.g. Classic"
+          autoComplete="off"
+        />
+      </div>
+      <div className="space-y-2 sm:col-span-2">
+        <Label htmlFor={fieldId('isbn')}>ISBN</Label>
+        <Input
+          id={fieldId('isbn')}
+          name="isbn"
+          value={formData.isbn}
+          onChange={onChange}
+          placeholder="e.g. 978-0743273565"
+          autoComplete="off"
+          className={isbnError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+        />
+        {isbnError && (
+          <p className="text-sm text-red-500 font-medium">{isbnError}</p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={fieldId('publication_year')}>Publication Year</Label>
+        <Input
+          id={fieldId('publication_year')}
+          name="publication_year"
+          type="number"
+          value={formData.publication_year}
+          onChange={onChange}
+          placeholder="e.g. 1925"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={fieldId('quantity')}>Quantity</Label>
+        <Input
+          id={fieldId('quantity')}
+          name="quantity"
+          type="number"
+          min="0"
+          value={formData.quantity}
+          onChange={onChange}
+          placeholder="e.g. 3"
+        />
+      </div>
+    </div>
+  )
 }
 
 const BooksTable = observer(() => {
@@ -29,6 +137,15 @@ const BooksTable = observer(() => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [currentBook, setCurrentBook] = useState<Book | null>(null)
   const [formData, setFormData] = useState(DEFAULT_FORM_STATE)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const normalizedIsbn = formData.isbn.trim()
+  const isbnConflict = normalizedIsbn
+    ? bookStore.observable.books.some(
+        (book) => book.isbn === normalizedIsbn && book.id !== currentBook?.id
+      )
+    : false
+  const isbnError = isbnConflict ? 'A book with this ISBN already exists.' : undefined
 
   const filteredBooks = useMemo(() => {
     const books = bookStore.observable.books
@@ -79,127 +196,55 @@ const BooksTable = observer(() => {
   const isFormValid =
     formData.title.trim() &&
     formData.author.trim() &&
+    formData.genre.trim() &&
     formData.isbn.trim() &&
     formData.publication_year > 0 &&
-    formData.quantity >= 0
+    formData.quantity >= 0 &&
+    !isbnConflict
 
   const handleSaveAdd = async () => {
-    if (!isFormValid) return
+    if (!isFormValid || isSaving) return
+    setIsSaving(true)
     try {
       await bookStore.createBook(formData)
       toast.success('Book added successfully!')
       setIsAddOpen(false)
-    } catch {
-      toast.error('Failed to add book')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to add book'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleSaveEdit = async () => {
-    if (!isFormValid || !currentBook) return
+    if (!isFormValid || !currentBook || isSaving) return
+    setIsSaving(true)
     try {
       await bookStore.updateBook(currentBook.id, formData)
       toast.success('Book updated successfully!')
       setIsEditOpen(false)
-    } catch {
-      toast.error('Failed to update book')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update book'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleConfirmDelete = async () => {
-    if (!currentBook) return
+    if (!currentBook || isSaving) return
+    setIsSaving(true)
     try {
       await bookStore.deleteBook(currentBook.id)
       toast.success('Book deleted successfully!')
       setIsDeleteOpen(false)
-    } catch {
-      toast.error('Failed to delete book')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to delete book'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  const FormFields = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          name="title"
-          value={formData.title}
-          onChange={handleInputChange}
-          placeholder="e.g. The Great Gatsby"
-          autoFocus
-        />
-      </div>
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="author">Author</Label>
-        <Input
-          id="author"
-          name="author"
-          value={formData.author}
-          onChange={handleInputChange}
-          placeholder="e.g. F. Scott Fitzgerald"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="category_id">Category</Label>
-        <select
-          id="category_id"
-          name="category_id"
-          value={formData.category_id}
-          onChange={handleInputChange}
-          className="flex h-10 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-950 transition-colors"
-        >
-          {categoryStore.observable.categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="genre">Genre</Label>
-        <Input
-          id="genre"
-          name="genre"
-          value={formData.genre}
-          onChange={handleInputChange}
-          placeholder="e.g. Classic"
-        />
-      </div>
-      <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="isbn">ISBN</Label>
-        <Input
-          id="isbn"
-          name="isbn"
-          value={formData.isbn}
-          onChange={handleInputChange}
-          placeholder="e.g. 978-0743273565"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="publication_year">Publication Year</Label>
-        <Input
-          id="publication_year"
-          name="publication_year"
-          type="number"
-          value={formData.publication_year}
-          onChange={handleInputChange}
-          placeholder="e.g. 1925"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="quantity">Quantity</Label>
-        <Input
-          id="quantity"
-          name="quantity"
-          type="number"
-          min="0"
-          value={formData.quantity}
-          onChange={handleInputChange}
-          placeholder="e.g. 3"
-        />
-      </div>
-    </div>
-  )
+  const categories = categoryStore.observable.categories
 
   return (
     <div className="space-y-8">
@@ -310,10 +355,19 @@ const BooksTable = observer(() => {
             <DialogTitle>Add Book</DialogTitle>
             <DialogDescription>Add a new book to the library inventory.</DialogDescription>
           </DialogHeader>
-          <FormFields />
+          <BookFormFields
+            idPrefix="add-book"
+            formData={formData}
+            categories={categories}
+            autoFocus
+            isbnError={isbnError}
+            onChange={handleInputChange}
+          />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveAdd} disabled={!isFormValid}>Save Book</Button>
+            <Button variant="outline" onClick={() => setIsAddOpen(false)} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSaveAdd} disabled={!isFormValid || isSaving}>
+              {isSaving ? 'Saving...' : 'Save Book'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -325,10 +379,18 @@ const BooksTable = observer(() => {
             <DialogTitle>Edit Book</DialogTitle>
             <DialogDescription>Update the details for this book.</DialogDescription>
           </DialogHeader>
-          <FormFields />
+          <BookFormFields
+            idPrefix="edit-book"
+            formData={formData}
+            categories={categories}
+            isbnError={isbnError}
+            onChange={handleInputChange}
+          />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEdit} disabled={!isFormValid}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={!isFormValid || isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

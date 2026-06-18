@@ -6,6 +6,7 @@ import { BookObservable } from '@/stores/modules/books/observable'
 import { BookStore } from '@/stores/modules/books/store'
 import { InventoryObservable } from '@/stores/modules/inventory/observable'
 import { InventoryStore } from '@/stores/modules/inventory/store'
+import { AUTH_SESSION_EXPIRED_EVENT } from '@/shared/utils/auth-events'
 
 export class RootStore {
   accountObservable: AccountObservable
@@ -26,6 +27,10 @@ export class RootStore {
     this.bookObservable = new BookObservable()
     this.bookStore = new BookStore(this.bookObservable)
     this.inventoryObservable = new InventoryObservable()
-    this.inventoryStore = new InventoryStore(this.inventoryObservable)
+    this.inventoryStore = new InventoryStore(this.inventoryObservable, this.bookStore)
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, () => {
+      this.accountStore.clearAuth()
+    })
   }
 }

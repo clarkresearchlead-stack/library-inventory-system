@@ -11,6 +11,7 @@ import { Button } from '@/shared/components/ui/button'
 import { useStore } from '@/stores/root/store'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { observer } from 'mobx-react-lite'
 
 const loginSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -19,7 +20,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-export function LoginForm() {
+export const LoginForm = observer(function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const { accountStore } = useStore()
   const navigate = useNavigate()
@@ -31,8 +32,8 @@ export function LoginForm() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: 'admin',
-      password: 'admin123',
+      username: '',
+      password: '',
     },
   })
 
@@ -40,9 +41,9 @@ export function LoginForm() {
     try {
       await accountStore.login(data)
       toast.success('Signed in successfully!')
-      navigate('/dashboard')
+      navigate('/dashboard', { replace: true })
     } catch {
-      toast.error('Invalid username or password')
+      toast.error(accountStore.observable.error || 'Invalid username or password')
     }
   }
 
@@ -77,7 +78,7 @@ export function LoginForm() {
                   type="text"
                   placeholder="Enter your username"
                   className={errors.username ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || accountStore.observable.isLoading}
                   {...register('username')}
                 />
                 {errors.username && (
@@ -97,14 +98,14 @@ export function LoginForm() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     className={`pr-10 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || accountStore.observable.isLoading}
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || accountStore.observable.isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -116,12 +117,18 @@ export function LoginForm() {
                 )}
               </div>
 
+              {accountStore.observable.error && (
+                <p className="text-sm text-red-500 font-medium text-center">
+                  {accountStore.observable.error}
+                </p>
+              )}
+
               <Button
                 type="submit"
                 className="w-full mt-6 h-11 text-base font-medium"
-                disabled={isSubmitting}
+                disabled={isSubmitting || accountStore.observable.isLoading}
               >
-                {isSubmitting ? (
+                {isSubmitting || accountStore.observable.isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Signing in...
@@ -136,4 +143,4 @@ export function LoginForm() {
       </motion.div>
     </div>
   )
-}
+})

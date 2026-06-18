@@ -41,4 +41,17 @@ export class BookStore {
       this.observable.books = this.observable.books.filter((b) => b.id !== id)
     })
   }
+
+  adjustBookQuantity(id: number, delta: number) {
+    runInAction(() => {
+      const index = this.observable.books.findIndex((b) => b.id === id)
+      if (index === -1) return
+
+      const book = this.observable.books[index]
+      this.observable.books[index] = {
+        ...book,
+        quantity: Math.max(0, book.quantity + delta),
+      }
+    })
+  }
 }
