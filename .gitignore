@@ -1,3 +1,19 @@
 node_modules
 dist
 .env
+
+# Frontend
+frontend/node_modules
+frontend/dist
+
+# Backend build output
+backend/**/bin/
+backend/**/obj/
+
+# Local dev database
+backend/data/*.db
+backend/data/*.db-*
+
+# Secrets
+backend/**/secrets.json
+tsconfig.tsbuildinfo

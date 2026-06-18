@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Library Inventory System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Full-stack library inventory management application.
 
-Currently, two official plugins are available:
+| Layer | Tech | Location |
+|-------|------|----------|
+| Frontend | React + TypeScript + Vite | `frontend/` |
+| Backend | ASP.NET Core 8 Web API | `backend/src/` |
+| Database | SQLite (dev) / SQL Server (prod) | `backend/data/` |
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Quick Start
 
-## React Compiler
+### Prerequisites
+- Node.js 18+
+- .NET 8 SDK
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Run both apps
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Terminal 1 — Backend:**
+```bash
+npm run dev:backend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Terminal 2 — Frontend:**
+```bash
+npm run dev
 ```
+
+- Frontend: http://localhost:5173
+- API: http://localhost:5000/api/
+- Swagger: http://localhost:5000/swagger
+
+### Default login
+- **Username:** `admin`
+- **Password:** `admin123`
+
+## Folder Structure
+
+```
+library-inventory-system/
+├── frontend/          # React app
+├── backend/           # .NET API + database scripts
+├── docs/              # Project documentation
+├── package.json       # Root scripts (delegates to frontend/backend)
+└── README.md
+```
+
+See [docs/folder-structure.md](docs/folder-structure.md) for the complete tree.
+
+## Documentation
+
+- [Setup guide](docs/setup.md)
+- [Folder structure](docs/folder-structure.md)
+- [API endpoints](docs/api-endpoints.md)
+- [Architecture](docs/architecture.md)
+- [Backend README](backend/README.md)
+- [Database setup](backend/database/README.md)
+- [Frontend README](frontend/README.md)
