@@ -7,19 +7,34 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
+import { getApiErrorMessage } from '@/shared/utils/api-error'
 import { toast } from 'sonner'
 import { useStore } from '@/stores/root/store'
 import { observer } from 'mobx-react-lite'
 import type { Category } from '@/models/category'
 
 const CategoriesTable = observer(() => {
-  const { categoryStore } = useStore()
+  const { categoryStore, bookStore } = useStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null)
   const [categoryName, setCategoryName] = useState('')
+
+  const [isSaving, setIsSaving] = useState(false)
+
+  const bookCountByCategory = useMemo(() => {
+    const counts = new Map<number, number>()
+    for (const book of bookStore.observable.books) {
+      counts.set(book.category_id, (counts.get(book.category_id) ?? 0) + 1)
+    }
+    return counts
+  }, [bookStore.observable.books])
+
+  const currentCategoryBookCount = currentCategory
+    ? bookCountByCategory.get(currentCategory.id) ?? 0
+    : 0
 
   const filteredCategories = useMemo(() => {
     const cats = categoryStore.observable.categories
@@ -46,35 +61,44 @@ const CategoriesTable = observer(() => {
   }
 
   const handleSaveAdd = async () => {
-    if (!categoryName.trim()) return
+    if (!categoryName.trim() || isSaving) return
+    setIsSaving(true)
     try {
       await categoryStore.createCategory({ name: categoryName.trim() })
       toast.success('Category added successfully!')
       setIsAddOpen(false)
-    } catch {
-      toast.error('Failed to add category')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to add category'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleSaveEdit = async () => {
-    if (!categoryName.trim() || !currentCategory) return
+    if (!categoryName.trim() || !currentCategory || isSaving) return
+    setIsSaving(true)
     try {
       await categoryStore.updateCategory(currentCategory.id, { name: categoryName.trim() })
       toast.success('Category updated successfully!')
       setIsEditOpen(false)
-    } catch {
-      toast.error('Failed to update category')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update category'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   const handleConfirmDelete = async () => {
-    if (!currentCategory) return
+    if (!currentCategory || isSaving || currentCategoryBookCount > 0) return
+    setIsSaving(true)
     try {
       await categoryStore.deleteCategory(currentCategory.id)
       toast.success('Category deleted successfully!')
       setIsDeleteOpen(false)
-    } catch {
-      toast.error('Failed to delete category')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to delete category'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -131,6 +155,7 @@ const CategoriesTable = observer(() => {
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Books</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -140,6 +165,9 @@ const CategoriesTable = observer(() => {
                   <TableRow key={category.id}>
                     <TableCell className="font-medium text-stone-500">{category.id}</TableCell>
                     <TableCell className="font-semibold text-stone-900">{category.name}</TableCell>
+                    <TableCell className="text-right font-medium text-stone-700">
+                      {bookCountByCategory.get(category.id) ?? 0}
+                    </TableCell>
                     <TableCell className="text-stone-500">
                       {format(new Date(category.created_at), 'MMM d, yyyy')}
                     </TableCell>
@@ -217,12 +245,26 @@ const CategoriesTable = observer(() => {
           <DialogHeader>
             <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{currentCategory?.name}"? This action cannot be undone.
+              {currentCategoryBookCount > 0 ? (
+                <>
+                  Cannot delete "{currentCategory?.name}" because it has{' '}
+                  {currentCategoryBookCount} linked book{currentCategoryBookCount === 1 ? '' : 's'}.
+                  Reassign or delete those books first.
+                </>
+              ) : (
+                <>Are you sure you want to delete "{currentCategory?.name}"? This action cannot be undone.</>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>Delete Category</Button>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} disabled={isSaving}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isSaving || currentCategoryBookCount > 0}
+            >
+              {isSaving ? 'Deleting...' : 'Delete Category'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

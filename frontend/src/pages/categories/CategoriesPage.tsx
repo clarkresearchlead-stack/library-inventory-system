@@ -5,11 +5,12 @@ import { CategoriesTable } from '@/features/categories'
 import PageLoader from '@/shared/components/ui/page-loader'
 
 const CategoriesPage = observer(() => {
-  const { categoryStore } = useStore()
+  const { categoryStore, bookStore } = useStore()
 
   useEffect(() => {
     categoryStore.fetchCategories()
-  }, [categoryStore])
+    bookStore.fetchBooks()
+  }, [categoryStore, bookStore])
 
   if (categoryStore.observable.isLoading) return <PageLoader />
 
