@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import { Menu } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import { AppLogo } from "@/shared/components/AppLogo";
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,6 +28,7 @@ const DashboardLayout = () => {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
+          <AppLogo className="h-12 w-12 object-contain" />
           <span className="font-semibold text-stone-900">Library Inventory</span>
         </div>
         <main className="flex-1 overflow-y-auto bg-background p-4 md:p-8">

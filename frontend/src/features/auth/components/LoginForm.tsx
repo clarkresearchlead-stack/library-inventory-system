@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Eye, EyeOff, Loader2, Library } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
@@ -12,6 +12,7 @@ import { useStore } from '@/stores/root/store'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { observer } from 'mobx-react-lite'
+import { AppLogo } from '@/shared/components/AppLogo'
 
 const loginSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -57,8 +58,8 @@ export const LoginForm = observer(function LoginForm() {
       >
         <Card className="border-stone-200 shadow-md">
           <CardHeader className="space-y-3 text-center pb-8">
-            <div className="mx-auto bg-stone-100 p-3 rounded-full w-fit mb-2">
-              <Library className="w-8 h-8 text-stone-900" />
+            <div className="mx-auto mb-2 w-fit">
+              <AppLogo className="h-28 w-28 object-contain" />
             </div>
             <CardTitle className="font-serif text-2xl font-bold text-stone-900">
               Library Inventory

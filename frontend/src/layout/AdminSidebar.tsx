@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, BookOpen, Tag, Package, BarChart, LogOut, X } from "lucide-react";
 import { useStore } from "@/stores/root/store";
+import { AppLogo } from "@/shared/components/AppLogo";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,9 +27,12 @@ const AdminSidebar = ({ onClose }: AdminSidebarProps) => {
   return (
     <aside className="flex h-screen w-64 flex-col border-r bg-white text-stone-900">
       <div className="p-6 border-b flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">📚 Library</h1>
-          <p className="text-sm text-stone-500">Inventory System</p>
+        <div className="flex items-center gap-3 min-w-0">
+          <AppLogo className="h-16 w-16 shrink-0 object-contain" />
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold leading-tight">Library</h1>
+            <p className="text-sm text-stone-500">Inventory System</p>
+          </div>
         </div>
         {/* Close button for mobile */}
         {onClose && (
